@@ -2,7 +2,6 @@ package com.bibleplangenerator;
 
 import com.bibleplangenerator.response.Book;
 import com.bibleplangenerator.response.ObjectMapper;
-import com.bibleplangenerator.response.Reference;
 import com.bibleplangenerator.response.Response;
 
 import java.io.IOException;
@@ -88,14 +87,12 @@ public class Application {
             Book.of("3 John", 1),
             Book.of("Jude", 1),
             Book.of("Revelation", 22)
-        );
+    );
 
 
     public static void main(String[] args) throws IOException, InterruptedException, URISyntaxException, ExecutionException {
 
-        int count = 0;
-        Reference reference = new Reference();
-        for (var book : books ) {
+        for (var book : books) {
             for (int chapter : IntStream.rangeClosed(1, book.getNumberOfChapters()).toArray()) {
                 var request = HttpRequest.newBuilder()
                         .uri(new URI(String.format("https://bible-api.com/%s+%d?translation=kjv", book.getName().replaceAll(" ", "+"), chapter)))
@@ -109,29 +106,13 @@ public class Application {
                         .thenApply(ObjectMapper::readValue)
                         .get();
 
-
-
-                for (var verse : response.getVerses()) {
-                    if (count == 0) {
-                        reference.setStartingBook(book.getName());
-                        reference.setStartingChapter(chapter);
-                        reference.setStartingVerse(verse.getVerse());
-                    }
-                    count += countWords(verse.getText());
-                    if(count >= WORDS_PER_DAY) {
-                        reference.setEndingBook(book.getName());
-                        reference.setEndingChapter(chapter);
-                        reference.setEndingVerse(verse.getVerse());
-                        System.out.println(String.format("%s | %d", reference, count));
-                        count = 0;
-                    }
-                }
+                System.out.println(String.format("%s %d | %d", book.getName(), chapter, countWords(response.getText())));
             }
         }
     }
 
     public static int countWords(String verse) {
-        String trim = verse.trim();
+        String trim = verse.replaceAll("\\n"," ").trim();
         if (trim.isEmpty())
             return 0;
         return trim.split("\\s+").length;
